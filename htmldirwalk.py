@@ -52,6 +52,7 @@ class HtmlDirWalker(object):
 
         self._http = requests
         self._parser = LinkHtmlParser
+        self._max_depth = 0
 
     def set_logger(self, logger):
         self._logger = logger
@@ -63,6 +64,10 @@ class HtmlDirWalker(object):
 
     def set_html_parser(self, parser):
         self._parser = parser
+        return self
+
+    def set_max_depth(self, max_depth):
+        self._max_depth = max_depth
         return self
 
     def _download(self, url):
@@ -97,13 +102,14 @@ class HtmlDirWalker(object):
         return (dirs, files)
 
     def walk(self, url):
-        dirs = deque(('', ))
+        dirs = deque((('', 1), ))
 
         while dirs:
-            root = dirs.pop()
+            root, depth = dirs.pop()
 
             content = self._directory_contents(os.path.join(url, root))
 
-            dirs.extendleft((os.path.join(root, d) for d in content[0]))
+            if self._max_depth == 0 or depth < self._max_depth:
+                dirs.extendleft(((os.path.join(root, d), depth+1) for d in content[0]))
 
             yield (root, content[0], content[1])

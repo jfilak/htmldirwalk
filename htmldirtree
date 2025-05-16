@@ -17,14 +17,16 @@ def go(url, walker):
             print(os.path.join(root, f))
 
 
-def main(url):
+def main(args):
     walker = htmldirwalk.HtmlDirWalker()
-    go(url, walker)
+    walker.set_max_depth(args.maxdepth)
+    go(args.url, walker)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Prints out directory structure exposed on HTTP')
     parser.add_argument('url', help='Root directory')
+    parser.add_argument('--maxdepth', type=int, help='Go down up to that level of directories (1 means print root contents). Default: 0 - no limit', default=0)
     parser.add_argument('-v', '--verbose', action='count', default=0, help='Root directory')
 
     args = parser.parse_args()
@@ -32,7 +34,7 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(max(10, 30 - (args.verbose * 10)))
 
     try:
-        main(args.url)
+        main(args)
         sys.exit(0)
     except RuntimeError:
         sys.exit(1)
