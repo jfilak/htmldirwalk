@@ -45,6 +45,80 @@ class LinkHtmlParser(HTMLParser):
             self.links.append(self._href)
 
 
+class OpenStackObjecStoreParser(HTMLParser):
+
+    def __init__(self):
+        super(OpenStackObjecStoreParser, self).__init__()
+
+        self._listing_content = False
+        self._item = False
+        self.links = list()
+
+    def handle_starttag(self, tag, attrs):
+        logging.debug('Start {}'.format(tag))
+
+        if tag == 'table':
+            self._listing_content = next((value for attr, value in attrs if attr == 'id'), None) is not None
+
+        if not self._listing_content:
+            return
+
+        if tag == 'tr':
+            for attr, value in attrs:
+                logging.debug('Attr {}: {}'.format(attr, value))
+
+                if attr != 'class':
+                    continue
+
+                classes = value.split(' ')
+
+                if 'item' not in classes:
+                    logging.debug('tr :: not item')
+                    continue
+
+                if 'subdir' in classes:
+                    logging.debug('tr :: subdir')
+                    self._item = True
+                    break
+
+                if 'type-application' in classes and 'type-directory' not in classes:
+                    logging.debug('tr :: file')
+                    self._item = True
+                    break
+
+        if not self._item:
+            logging.debug('not td')
+            return
+
+        if tag == 'td':
+            self._item_name = next((value for attr, value in attrs if attr == 'class'), None) == 'colname'
+
+        if not self._item_name:
+           logging.debug('not file name')
+           return
+
+        if tag != 'a':
+            logging.debug('not reference')
+            return
+
+        href = next((value for attr, value in attrs if attr == 'href'), None)
+        logging.debug('add link %s', href)
+        self.links.append(href)
+
+    def handle_endtag(self, tag):
+        if tag == 'td':
+            self._item_name = False
+
+        if tag == 'tr':
+            self._item = False
+
+        if tag == 'table':
+            self._listing_content = False
+
+    def handle_data(self, data):
+        pass
+
+
 class HtmlDirWalker(object):
 
     def __init__(self):
